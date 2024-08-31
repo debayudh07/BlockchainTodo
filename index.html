@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="box-border text-gray-800 flex justify-center items-center h-screen m-0 p-5">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-700 pd-5">Connect to MetaMask</h1>
+        <button id="connectButton" class="bg-blue-500 text-white py-2 px-4 mt-4 rounded-md hover:bg-red-600 transition duration-300">Connect Wallet</button>
+        <div class="pt-4">
+        <button id="disconnectButton" class="bg-blue-500 text-white py-2 px-4 mt-4 rounded-md hover:bg-red-600 transition duration-300" style="display: none; margin: 0 auto;">Disconnect Wallet</button>
+        </div>
+        <div id="walletDetails" class="bg-gray-200 p-4 rounded-lg shadow-lg mt-6 text-left w-full max-w-xl mx-auto" style="display: none;">
+            <p class="mb-2">Address: <span id="walletAddress" class="font-bold text-gray-700"></span></p>
+            <p>Balance: <span id="walletBalance" class="font-bold text-gray-700"></span> ETH</p>
+            <div class="mt-4">
+                <label for="recipient" class="block mb-2 text-gray-700">Recipient Address:</label>
+                <input type="text" id="recipient" class="w-full p-2 rounded-md border border-gray-300 mb-4" placeholder="Enter recipient address">
+                <label for="amount" class="block mb-2 text-gray-700">Amount (ETH):</label>
+                <input type="number" id="amount" class="w-full p-2 rounded-md border border-gray-300 mb-4" placeholder="Enter amount in ETH">
+                <button id="sendButton" class="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-700 transition duration-300">Send Transaction</button>
+                <a href="todo.html" class="text-blue-500 hover:underline mt-4 inline-block">Go to the TODO page</a>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+    <script>
+        const connectButton = document.getElementById('connectButton');
+        const disconnectButton = document.getElementById('disconnectButton');
+        const walletDetails = document.getElementById('walletDetails');
+        const walletAddress = document.getElementById('walletAddress');
+        const walletBalance = document.getElementById('walletBalance');
+        const sendButton = document.getElementById('sendButton');
+        const recipientInput = document.getElementById('recipient');
+        const amountInput = document.getElementById('amount');
+        let signer;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    const address = await signer.getAddress();
+                    walletAddress.textContent = address;
+                    const balance = await signer.getBalance();
+                    walletBalance.textContent = ethers.utils.formatEther(balance);
+
+                    walletDetails.style.display = 'block';
+                    disconnectButton.style.display = 'block';
+                    connectButton.style.display = 'none';
+                } catch (error) {
+                    console.error("Error connecting to MetaMask", error);
+                }
+            } else {
+                alert('MetaMask is not installed!');
+            }
+        }
+
+        async function sendTransaction() {
+            const recipient = recipientInput.value;
+            const amount = amountInput.value;
+
+            if (!recipient || !amount) {
+                alert("Please enter a recipient address and amount.");
+                return;
+            }
+
+            try {
+                const tx = await signer.sendTransaction({
+                    to: recipient,
+                    value: ethers.utils.parseEther(amount)
+                });
+                alert(`Transaction sent! Hash: ${tx.hash}`);
+            } catch (error) {
+                console.error("Error sending transaction", error);
+                alert("Transaction failed!");
+            }
+        }
+
+        function disconnectWallet() {
+            walletAddress.textContent = '';
+            walletBalance.textContent = '';
+            recipientInput.value = '';
+            amountInput.value = '';
+
+            walletDetails.style.display = 'none';
+            disconnectButton.style.display = 'none';
+            connectButton.style.display = 'block';
+        }
+
+        connectButton.addEventListener('click', connectWallet);
+        disconnectButton.addEventListener('click', disconnectWallet);
+        sendButton.addEventListener('click', sendTransaction);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain To-Do List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="box-border text-gray-800 flex justify-center items-center h-screen m-0 p-5">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-700 pd-5">Blockchain To-Do List</h1>
+
+        <div class="mt-6">
+            <input type="text" id="taskInput" class="w-full p-2 rounded-md border border-gray-300 mb-4" placeholder="Enter a new task">
+            <button id="addTaskButton" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300">Add Task</button>
+        </div>
+
+        <ul id="taskList" class="bg-gray-200 p-4 rounded-lg shadow-lg mt-6 text-left w-full max-w-xl mx-auto">
+            <!-- Tasks will be dynamically added here -->
+        </ul>
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+    <script>
+        const addTaskButton = document.getElementById('addTaskButton');
+        const taskInput = document.getElementById('taskInput');
+        const taskList = document.getElementById('taskList');
+        let signer;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                } catch (error) {
+                    console.error("Error connecting to MetaMask", error);
+                }
+            } else {
+                alert('MetaMask is not installed!');
+            }
+        }
+
+        async function sendTransaction(taskText) {
+            if (!signer) {
+                await connectWallet();
+            }
+
+            try {
+                const tx = await signer.sendTransaction({
+                    to: "0xb756FAd4A6B0b60feA42Fc1B49eA0c4CCe2F10D9", // Dummy address, replace with actual if needed
+                    value: ethers.utils.parseEther("0.0000001"), // Small transaction amount
+                    data: ethers.utils.hexlify(ethers.utils.toUtf8Bytes(taskText)) // Convert task text to hex data
+                });
+                const taskAddedMessage = document.createElement('p');
+                taskAddedMessage.textContent = `Task added! Transaction sent with hash: ${tx.hash}`;
+                taskAddedMessage.className = 'text-green-500';
+                taskList.appendChild(taskAddedMessage);
+
+                setTimeout(() => {
+                    taskList.removeChild(taskAddedMessage);
+                }, 1000);
+            } catch (error) {
+                console.error("Error sending transaction", error);
+                alert("Failed to add task to blockchain!");
+            }
+        }
+
+        async function addTask() {
+            const taskText = taskInput.value.trim();
+            if (taskText === '') {
+                alert('Please enter a task.');
+                return;
+            }
+
+            // Send the task text as a transaction to the blockchain
+            await sendTransaction(taskText);
+
+            // Add the task to the UI
+            const taskItem = document.createElement('li');
+            taskItem.className = 'flex justify-between items-center p-2 border-b border-gray-300';
+
+            const taskContent = document.createElement('span');
+            taskContent.textContent = taskText;
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'flex items-center space-x-2';
+
+            const completeButton = document.createElement('button');
+            completeButton.textContent = 'Complete';
+            completeButton.className = 'bg-green-500 text-white py-1 px-2 rounded-md hover:bg-green-700 transition duration-300';
+            completeButton.addEventListener('click', () => {
+                taskContent.classList.toggle('line-through');
+                taskContent.classList.toggle('text-gray-500');
+            });
+
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.className = 'bg-red-500 text-white py-1 px-2 rounded-md hover:bg-red-700 transition duration-300';
+            deleteButton.addEventListener('click', () => {
+                taskList.removeChild(taskItem);
+            });
+
+            actionsDiv.appendChild(completeButton);
+            actionsDiv.appendChild(deleteButton);
+
+            taskItem.appendChild(taskContent);
+            taskItem.appendChild(actionsDiv);
+
+            taskList.appendChild(taskItem);
+
+            taskInput.value = '';
+        }
+
+        addTaskButton.addEventListener('click', addTask);
+
+        taskInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // Connect wallet on page load
+        connectWallet();
+    </script>
+</body>
+
+</html>
